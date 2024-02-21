@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      dockerfile: ./docker/go.Dockerfile
+      context: .
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512MB
+
+networks:
+  monitoring-network:
+    driver: bridge
