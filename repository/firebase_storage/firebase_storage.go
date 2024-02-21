@@ -20,14 +20,9 @@ import (
 	"google.golang.org/api/option"
 )
 
-func initFirebase() *firebase.App {
+func initFirebase(pathRoot string) *firebase.App {
 	ctx := context.Background()
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Erro ao obter o diretório atual:", err)
-		panic(err)
-	}
-	path := filepath.Join(dir, "serviceAccountKey.json")
+	path := filepath.Join(pathRoot, "assets", "serviceAccountKey.json")
 	sa := option.WithCredentialsFile(path)
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
@@ -36,12 +31,8 @@ func initFirebase() *firebase.App {
 	return app
 }
 
-func getConfigJsonFirebase() (sa entity.ServiceAccount) {
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Erro ao obter o diretório atual:", err)
-	}
-	path := filepath.Join(dir, "serviceAccountKey.json")
+func getConfigJsonFirebase(pathRoot string) (sa entity.ServiceAccount) {
+	path := filepath.Join(pathRoot, "assets", "serviceAccountKey.json")
 
 	bytes, err := os.ReadFile(path)
 	if err != nil {
@@ -62,11 +53,9 @@ type FirebaseStorage struct {
 }
 
 func (repositorty FirebaseStorage) ListFiles(folderName string) (listFiles []string, err error) {
-	app := initFirebase()
-
 	ctx := context.TODO()
 
-	client, err := app.Storage(ctx)
+	client, err := repositorty.clientFirebase.Storage(ctx)
 	if err != nil {
 		return
 	}
@@ -76,7 +65,7 @@ func (repositorty FirebaseStorage) ListFiles(folderName string) (listFiles []str
 		return
 	}
 
-	it := bucket.Objects(ctx, &storage.Query{Prefix: ""})
+	it := bucket.Objects(ctx, &storage.Query{Prefix: folderName})
 	for {
 		objAttrs, err := it.Next()
 		if err == iterator.Done {
@@ -144,8 +133,12 @@ func (repositorty FirebaseStorage) generateSignedURL(objectPath string) (string,
 }
 
 func NewFirebaseStorage() repository.Storage {
-	fibaseCLient := initFirebase()
-	sa := getConfigJsonFirebase()
+	dir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Erro ao obter o diretório atual:", err)
+	}
+	fibaseCLient := initFirebase(dir)
+	sa := getConfigJsonFirebase(dir)
 	return FirebaseStorage{
 		fibaseCLient,
 		"palco-planner-test.appspot.com",
